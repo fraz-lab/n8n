@@ -1,0 +1,174 @@
+{
+    "name": "Qdrant ingest KB chunks (JSONL from Drive)",
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "meta": {
+      "templateCredsSetupCompleted": false
+    },
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [896, -432],
+        "id": "f1c2b3a4-0001-4000-8000-000000000001",
+        "name": "Manual Trigger"
+      },
+      {
+        "parameters": {
+          "url": "https://drive.google.com/uc?export=download&id=12K-LXFDPSfNAC4js8Mv51xu0hsq2oq74",
+          "options": {
+            "response": {
+              "response": {
+                "responseFormat": "file"
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4,
+        "position": [1120, -432],
+        "id": "a825ad53-fee6-4719-8610-4c88207c48d2",
+        "name": "HTTP Request3"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Decode first incoming binary (chunks.jsonl) → one n8n item per line.\nconst BINARY_KEY = 'data';\n\nconst root = $input.first();\nif (!root?.binary?.[BINARY_KEY]) {\n  throw new Error(\n    `No binary.${BINARY_KEY}. In HTTP node, confirm response is \"file\" and note the binary property name (often \"data\").`,\n  );\n}\n\nconst b = root.binary[BINARY_KEY];\nconst buf = Buffer.from(b.data, 'base64');\nconst raw = buf.toString('utf8');\n\nconst out = [];\nfor (const line of raw.split('\\n')) {\n  const t = line.trim();\n  if (!t) continue;\n  let row;\n  try {\n    row = JSON.parse(t);\n  } catch (e) {\n    throw new Error(`Invalid JSON line: ${line.slice(0, 120)}…`);\n  }\n\n  const { id, text, payload } = row;\n  if (typeof text !== 'string' || !text.trim()) {\n    continue;\n  }\n  if (!payload || typeof payload !== 'object') {\n    throw new Error(`Line missing payload for id=${id}`);\n  }\n\n  out.push({\n    json: {\n      id,\n      text: text.trim(),\n      payload,\n    },\n  });\n}\n\nif (!out.length) throw new Error('No chunks parsed — empty file or wrong format?');\nreturn out;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [1344, -432],
+        "id": "b63f4295-9ec6-47f5-911d-9159fb4a3df2",
+        "name": "Code in JavaScript"
+      },
+      {
+        "parameters": {
+          "batchSize": 1,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [1584, -432],
+        "id": "c8615c01-c029-42b1-9066-34d5e47c6a0d",
+        "name": "Loop Over Items"
+      },
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.noOp",
+        "name": "Done — all batches processed",
+        "typeVersion": 1,
+        "position": [2048, -240],
+        "id": "d32988c9-2c57-4dc9-99d6-0c6fc3c2c43c"
+      },
+      {
+        "parameters": {
+          "mode": "insert",
+          "qdrantCollection": {
+            "__rl": true,
+            "mode": "id",
+            "value": "luxury_watches_kb"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+        "typeVersion": 1.3,
+        "position": [1840, -512],
+        "id": "3924cd03-68ca-43d0-853c-7768b337e75d",
+        "name": "Qdrant Vector Store"
+      },
+      {
+        "parameters": {
+          "chunkSize": 50000,
+          "chunkOverlap": 0
+        },
+        "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+        "typeVersion": 1,
+        "position": [2016, -320],
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "Recursive Character Text Splitter"
+      },
+      {
+        "parameters": {
+          "jsonMode": "expressionData",
+          "jsonData": "={{ $json.text }}",
+          "textSplittingMode": "custom",
+          "options": {
+            "metadata": {
+              "metadataValues": [
+                { "name": "source", "value": "={{ $json.payload.source }}" },
+                { "name": "section_letter", "value": "={{ $json.payload.section_letter }}" },
+                { "name": "section_title", "value": "={{ $json.payload.section_title }}" },
+                { "name": "type", "value": "={{ $json.payload.type }}" },
+                { "name": "question", "value": "={{ $json.payload.question }}" },
+                { "name": "chunk_part", "value": "={{ $json.payload.chunk_part }}" },
+                { "name": "chunk_total", "value": "={{ $json.payload.chunk_total }}" },
+                { "name": "chunk_id", "value": "={{ $json.id }}" }
+              ]
+            }
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+        "typeVersion": 1.1,
+        "position": [2192, -352],
+        "id": "6eebf7a5-f841-4ac3-bdcc-0151666f0931",
+        "name": "Default Data Loader"
+      },
+      {
+        "parameters": {
+          "model": "text-embedding-3-small",
+          "options": {
+            "batchSize": 1
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+        "typeVersion": 1.2,
+        "position": [1840, -352],
+        "id": "ae545fbc-2239-4291-81b5-3139fb1ef719",
+        "name": "Embeddings OpenAI",
+        "credentials": {
+          "openAiApi": {
+            "id": "DqF2sDPkbqPpEE9T",
+            "name": "MyT key"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Manual Trigger": {
+        "main": [[{ "node": "HTTP Request3", "type": "main", "index": 0 }]]
+      },
+      "HTTP Request3": {
+        "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]]
+      },
+      "Code in JavaScript": {
+        "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]]
+      },
+      "Loop Over Items": {
+        "main": [
+          [{ "node": "Qdrant Vector Store", "type": "main", "index": 0 }],
+          [{ "node": "Done — all batches processed", "type": "main", "index": 0 }]
+        ]
+      },
+      "Qdrant Vector Store": {
+        "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]]
+      },
+      "Recursive Character Text Splitter": {
+        "ai_textSplitter": [
+          [{ "node": "Default Data Loader", "type": "ai_textSplitter", "index": 0 }]
+        ]
+      },
+      "Default Data Loader": {
+        "ai_document": [
+          [{ "node": "Qdrant Vector Store", "type": "ai_document", "index": 0 }]
+        ]
+      },
+      "Embeddings OpenAI": {
+        "ai_embedding": [
+          [{ "node": "Qdrant Vector Store", "type": "ai_embedding", "index": 0 }]
+        ]
+      }
+    },
+    "pinData": {}
+  }
