@@ -1,6 +1,15 @@
+
+
+
+
+
+[Workflow Automation - n8n.pdf](https://github.com/user-attachments/files/26417639/Workflow.Automation.-.n8n.pdf)
+
+
+
 # AluxuryWatches WhatsApp Sales Assistant — Solution Overview
 
-This document describes the n8n workflow exported as **`developing flow (5).json`** (internal name: *developing flow*).
+This document describes the n8n workflow exported as (internal name: *developing flow*).
 
 ---
 
