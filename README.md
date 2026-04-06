@@ -1,10 +1,10 @@
+![1](https://github.com/user-attachments/assets/4e753aae-b86a-4188-8184-ed4119ce756b)
 
 
 
 
 
 [Workflow Automation - n8n.pdf](https://github.com/user-attachments/files/26417639/Workflow.Automation.-.n8n.pdf)
-
 
 
 # AluxuryWatches WhatsApp Visual Sales Assistant — Solution Overview
