@@ -98,6 +98,3 @@ This automation turns **WhatsApp** into a guided **luxury watch sales channel** 
 
 ---
 
-## Related file
-
-- Workflow export: [`developing flow (5).json`](./developing%20flow%20(5).json)
