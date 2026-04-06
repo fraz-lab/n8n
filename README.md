@@ -7,7 +7,7 @@
 
 
 
-# AluxuryWatches WhatsApp Sales Assistant — Solution Overview
+# AluxuryWatches WhatsApp Visual Sales Assistant — Solution Overview
 
 This document describes the n8n workflow exported as (internal name: *developing flow*).
 
